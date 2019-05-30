@@ -15,6 +15,19 @@ type Engine struct {
 	pool  sync.Pool
 }
 
+func New() *Engine {
+	engine := &Engine{
+		RouterGroup: RouterGroup{
+			Handlers: make(HandlerChain, 0),
+			basePath: "/",
+			root:     true,
+		},
+		trees: make(methodTrees),
+	}
+	engine.RouterGroup.engine = engine
+	return engine
+}
+
 func (engine *Engine) Run(addr string) {
 	http.ListenAndServe(addr, engine)
 }
@@ -28,7 +41,7 @@ func (engine *Engine) addRoute(method string, path string, handlers HandlerChain
 		}
 	}
 	tree := engine.trees[method]
-	tree.insertRoute()
+	tree.addRoute(path, handlers)
 }
 
 func (engine *Engine) ServeHTTP(responseWriter http.ResponseWriter, request *http.Request) {
@@ -44,7 +57,7 @@ func (engine *Engine) handleRequest(c *Context) {
 	method := c.Request.Method
 	path := c.Request.URL.Path
 	tree := engine.trees[method]
-	handlers, params := tree.getHandlers(path)
+	handlers, params := tree.getValue(path)
 	c.Params = params
 	c.handlers = handlers
 	c.Next()

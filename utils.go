@@ -7,7 +7,7 @@ func joinPath(absolutePath, relativePath string) string {
 		return absolutePath
 	}
 	finalPath := path.Join(absolutePath, relativePath)
-	appendSlash := relativePath[len(relativePath)-1] == '/' && finalpath[len(finalpath)-1] != '/'
+	appendSlash := relativePath[len(relativePath)-1] == '/' && finalPath[len(finalPath)-1] != '/'
 	if appendSlash {
 		return finalPath + "/"
 	}

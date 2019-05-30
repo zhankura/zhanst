@@ -7,7 +7,7 @@ import (
 )
 
 type Param struct {
-	Key   string
+	key   string
 	Value string
 }
 
@@ -28,7 +28,7 @@ type Context struct {
 
 	engine *Engine
 
-	Key map[string]interface{}
+	key map[string]interface{}
 }
 
 func (c *Context) Abort() {
@@ -36,7 +36,7 @@ func (c *Context) Abort() {
 }
 
 func (c *Context) Next() {
-	c.index ++
+	c.index++
 	for handlersLen := int8(len(c.handlers)); c.index < handlersLen; c.index++ {
 		c.handlers[c.index](c)
 	}
@@ -50,13 +50,23 @@ func (c *Context) Render(code int, r render.Render) {
 }
 
 func (c *Context) JSON(code int, data interface{}) {
-	c.Render(code, render.JSON{Data:data})
+	c.Render(code, render.JSON{Data: data})
 }
-
 
 func (c *Context) reset() {
 	c.Params = c.Params[0:0]
 	c.index = -1
 	c.handlers = c.handlers[0:0]
-	c.Key = nil
+	c.key = nil
+}
+
+func (c *Context) SetValue(key string, value interface{}) {
+	c.key[key] = value
+}
+
+func (c *Context) GetValue(key string) interface{} {
+	if _, ok := c.key[key]; !ok {
+		return nil
+	}
+	return c.key[key]
 }

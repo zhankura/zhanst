@@ -32,7 +32,7 @@ func (group *RouterGroup) Use(middleware ...HandlerFunc) {
 
 func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) *RouterGroup {
 	return &RouterGroup{
-		Handlers: group.Handlers,
+		Handlers: append(group.Handlers, handlers...),
 		basePath: group.calculateAbsolutePath(relativePath),
 		engine:   group.engine,
 	}
@@ -70,13 +70,11 @@ func (group *RouterGroup) ANY(path string, handlers ...HandlerFunc) {
 	group.handle("HEAD", path, handlers...)
 }
 
-
 func (group *RouterGroup) handle(httpMethod, relativePath string, handlers ...HandlerFunc) {
 	absolutePath := group.calculateAbsolutePath(relativePath)
 	combinedHandlers := group.combineHandlers(handlers...)
 	group.engine.addRoute(httpMethod, absolutePath, combinedHandlers)
 }
-
 
 func (group *RouterGroup) calculateAbsolutePath(relativePath string) string {
 	return joinPath(group.basePath, relativePath)
