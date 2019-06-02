@@ -5,6 +5,11 @@ import (
 	"net/http"
 )
 
+type Render interface {
+	Render(http.ResponseWriter, int) error
+	WriteContentType(w http.ResponseWriter)
+}
+
 type JSON struct {
 	Data interface{}
 }
@@ -18,15 +23,20 @@ func writeContentType(w http.ResponseWriter, value []string) {
 	}
 }
 
-func (r JSON) Render(w http.ResponseWriter) (err error) {
-	if err = WriteJSON(w, r.Data); err != nil {
+func (r JSON) Render(w http.ResponseWriter, code int) (err error) {
+	if err = WriteJSON(w, code, r.Data); err != nil {
 		return err
 	}
 	return nil
 }
 
-func WriteJSON(w http.ResponseWriter, obj interface{}) error {
+func (r JSON) WriteContentType(w http.ResponseWriter) {
 	writeContentType(w, jsonContentType)
+}
+
+func WriteJSON(w http.ResponseWriter, code int, obj interface{}) error {
+	writeContentType(w, jsonContentType)
+	w.WriteHeader(code)
 	jsonBytes, err := json.Marshal(obj)
 	if err != nil {
 		return err

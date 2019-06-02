@@ -27,6 +27,8 @@ type Context struct {
 
 	engine *Engine
 
+	status int
+
 	key map[string]interface{}
 }
 
@@ -41,16 +43,20 @@ func (c *Context) Next() {
 	}
 }
 
-//func (c *Context) Render(code int, r render.Render) {
-//	c.Writer.WriteHeader(code)
-//	if err := r.Render(c.Writer); err != nil {
-//		panic(err)
-//	}
-//}
-//
-//func (c *Context) JSON(code int, data interface{}) {
-//	c.Render(code, render.JSON{Data: data})
-//}
+func (c *Context) Status() int {
+	return c.status
+}
+
+func (c *Context) Render(code int, r Render) {
+	c.status = code
+	if err := r.Render(c.Writer, code); err != nil {
+		panic(err)
+	}
+}
+
+func (c *Context) JSON(code int, data interface{}) {
+	c.Render(code, JSON{Data: data})
+}
 
 func (c *Context) reset() {
 	c.Params = c.Params[0:0]

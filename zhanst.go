@@ -2,6 +2,7 @@ package zhanst
 
 import (
 	"net/http"
+	"os"
 	"sync"
 )
 
@@ -25,6 +26,20 @@ func New() *Engine {
 		trees: make(methodTrees),
 	}
 	engine.RouterGroup.engine = engine
+	engine.pool.New = func() interface{} {
+		return &Context{
+			engine:   engine,
+			Params:   make(Params, 0),
+			handlers: make(HandlerChain, 0),
+			key:      make(map[string]interface{}),
+		}
+	}
+	return engine
+}
+
+func Default() *Engine {
+	engine := New()
+	engine.Use(Logger(os.Stdout))
 	return engine
 }
 
