@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	part  = 1
-	param = 2
+	part  = 0
+	param = 1
 )
 
 type methodTree struct {
@@ -20,9 +20,14 @@ type methodTrees map[string]methodTree
 type treeNode struct {
 	path     string
 	children []*treeNode
-	nodeType uint
+	nodeType int
 	handlers HandlerChain
 	indices  string
+}
+
+type nodeMid struct {
+	path string
+	node *treeNode
 }
 
 func min(first, second int) int {
@@ -36,29 +41,164 @@ func min(first, second int) int {
 func (tree *methodTree) getValue(path string) (HandlerChain, Params) {
 	params := make(Params, 0)
 	node := tree.root
+	nodes := make([]nodeMid, 0)
 walk:
 	for {
-		if path == node.path {
+		if path == node.path && node.nodeType == part {
+			return node.handlers, params
+		} else if id := strings.Index(path, "/"); id == -1 && node.nodeType == param {
+			p := Param{
+				Key:   node.path,
+				Value: path,
+			}
+			params = append(params, p)
 			return node.handlers, params
 		}
-		maxLength := min(len(path), len(node.path))
 		var end int
-		for end = 0; end < maxLength; end++ {
-			if path[end] != node.path[end] {
+		if node.nodeType == part {
+			maxLength := min(len(path), len(node.path))
+			for end = 0; end < maxLength; end++ {
+				if path[end] != node.path[end] {
+					break
+				}
+			}
+			if end != len(node.path) {
+				if len(nodes) == 0 {
+					panic(errors.New("not found"))
+				} else {
+					mid := nodes[len(nodes)]
+					node = mid.node
+					path = mid.path
+					continue walk
+				}
+			}
+		} else {
+			for end = 0; end < len(path); end++ {
+				if path[end] == '/' {
+					break
+				}
+			}
+			p := Param{
+				Key:   node.path,
+				Value: path[:end],
+			}
+			params = append(params, p)
+		}
+		path = path[end:]
+		if strings.Contains(node.indices, ":") && strings.Contains(node.indices, string(path[0])) {
+			nodes = append(nodes, nodeMid{
+				path: path,
+				node: node,
+			})
+		}
+		if id := strings.Index(node.indices, ":"); id != -1 {
+			node = node.children[id]
+		} else if id := strings.Index(node.indices, string(path[0])); id != -1 {
+			node = node.children[id]
+		} else {
+			if len(nodes) == 0 {
+				panic(errors.New("not found"))
+			} else {
+				mid := nodes[len(nodes)-1]
+				node = mid.node
+				path = mid.path
+			}
+		}
+		continue walk
+	}
+}
+
+func insertChildNode(path string, handlers HandlerChain, children []*treeNode, indices string, newChildTree bool) *treeNode {
+	newRoot := new(treeNode)
+	if !newChildTree {
+		newRoot.path = path
+		newRoot.handlers = handlers
+		newRoot.children = children
+		newRoot.indices = indices
+		return newRoot
+	}
+	fatherParam := false
+	var node *treeNode = nil
+walk:
+	for {
+		var begin = 0
+		var end = 0
+		var position = 0
+		var nodeType int
+		for position = 0; position < len(path); position++ {
+			if path[position] == ':' {
 				break
 			}
 		}
-		if end != len(node.path) {
-			panic(errors.New("not found"))
-		}
-		path = path[end:]
-		if id := strings.Index(node.indices, string(path[0])); id != -1 {
-			node = node.children[id]
-			continue walk
+		if position == 0 {
+			if fatherParam == true {
+				panic(errors.New("param can not be close to"))
+			}
+			nodeType = param
+			fatherParam = true
+			begin = position + 1
+			for end = begin; end < len(path); end++ {
+				if path[end] == ':' {
+					panic(errors.New("param error"))
+				}
+				if path[end] == '/' {
+					break
+				}
+			}
 		} else {
-			panic(errors.New("not found"))
+			nodeType = part
+			end = position
+			if path[position-1] != '/' && position != len(path) {
+				panic(errors.New(":param must after /"))
+			}
+			if path[begin:end] != "/" {
+				fatherParam = false
+			}
+		}
+		var nowNode *treeNode
+		if node != nil {
+			newNode := new(treeNode)
+			nowNode = newNode
+		} else {
+			nowNode = newRoot
+		}
+		nowNode.path = path[begin:end]
+		nowNode.nodeType = nodeType
+		if node != nil {
+			if nodeType == param {
+				node.indices = node.indices + ":"
+			} else {
+				node.indices = node.indices + string(nowNode.path[0])
+			}
+			node.children = append(node.children, nowNode)
+		}
+		if end == len(path) {
+			nowNode.children = children
+			nowNode.handlers = handlers
+			return newRoot
+		} else {
+			nowNode.children = make([]*treeNode, 0)
+			nowNode.handlers = make(HandlerChain, 0)
+			node = nowNode
+			path = path[end:]
+		}
+		continue walk
+	}
+
+}
+
+func getParam(path string) string {
+	var begin int
+	var end int
+	if strings.HasPrefix(path, ":") {
+		begin = 1
+	}
+	for end = 0; end < len(path); end++ {
+		if path[end] == '/' {
+			break
 		}
 	}
+	return path[begin:end]
 }
 
 func (tree *methodTree) addRoute(path string, handlers HandlerChain) {
@@ -73,18 +213,13 @@ walk:
 			}
 		}
 		if end != maxLength {
-			newNode := new(treeNode)
-			newNode.path = node.path[end:]
-			newNode.handlers = node.handlers
-			newNode.children = node.children
-			newNode.indices = node.indices
+			newNode := insertChildNode(node.path[end:], node.handlers, node.children, node.indices, false)
 			node.path = node.path[:end]
 			node.handlers = nil
-			insertNode := new(treeNode)
-			insertNode.path = path[end:]
-			insertNode.handlers = handlers
+			remainPath := path[end:]
+			insertNode := insertChildNode(remainPath, handlers, make([]*treeNode, 0), "", true)
 			node.children = []*treeNode{newNode, insertNode}
-			node.indices = string([]uint8{newNode.path[0], insertNode.path[0]})
+			node.indices = string([]uint8{newNode.path[0], remainPath[0]})
 			return
 		} else {
 			var remainPath string
@@ -93,6 +228,11 @@ walk:
 				if id := strings.Index(node.indices, string(remainPath[0])); id != -1 {
 					node = node.children[id]
 					path = remainPath
+					if node.nodeType == param {
+						if node.path != getParam(remainPath) {
+							panic(errors.New("param has been wrong"))
+						}
+					}
 					continue walk
 				}
 			} else if len(path) < len(node.path) {
@@ -100,9 +240,7 @@ walk:
 			} else {
 				panic(errors.New("url has been used"))
 			}
-			insertNode := new(treeNode)
-			insertNode.path = remainPath
-			insertNode.handlers = handlers
+			insertNode := insertChildNode(remainPath, handlers, make([]*treeNode, 0), "", true)
 			node.children = append(node.children, insertNode)
 			node.indices = node.indices + string(remainPath[0])
 			return

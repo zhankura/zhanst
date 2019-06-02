@@ -6,7 +6,7 @@ import (
 )
 
 type Param struct {
-	key   string
+	Key   string
 	Value string
 }
 

@@ -34,9 +34,9 @@ func (engine *Engine) Run(addr string) {
 
 func (engine *Engine) Handle(method string, path string) {
 	tree := engine.trees[method]
-	handles, _ := tree.getValue(path)
+	handles, params := tree.getValue(path)
 	for _, handle := range handles {
-		c := Context{}
+		c := Context{Params: params}
 		handle(&c)
 	}
 }
@@ -45,6 +45,8 @@ func (engine *Engine) addRoute(method string, path string, handlers HandlerChain
 	if _, ok := engine.trees[method]; !ok {
 		root := new(treeNode)
 		root.path = "/"
+		root.children = make([]*treeNode, 0)
+		root.handlers = make(HandlerChain, 0)
 		engine.trees[method] = methodTree{
 			method: method,
 			root:   root,
