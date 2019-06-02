@@ -65,6 +65,13 @@ func (c *Context) reset() {
 	c.key = nil
 }
 
+func (c *Context) Bind(obj interface{}) error {
+	if err := Bind(c.Request, obj); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *Context) SetValue(key string, value interface{}) {
 	c.key[key] = value
 }
