@@ -39,7 +39,7 @@ func min(first, second int) int {
 }
 
 func (tree *methodTree) getValue(path string) (HandlerChain, Params) {
-	params := make(Params, 0)
+	params := make(Params)
 	node := tree.root
 	nodes := make([]nodeMid, 0)
 walk:
@@ -47,11 +47,11 @@ walk:
 		if path == node.path && node.nodeType == part {
 			return node.handlers, params
 		} else if id := strings.Index(path, "/"); id == -1 && node.nodeType == param {
-			p := Param{
-				Key:   node.path,
-				Value: path,
+			if _, ok := params[node.path]; !ok {
+				params[node.path] = path
+			} else {
+				panic(errors.New("param name can not be same"))
 			}
-			params = append(params, p)
 			return node.handlers, params
 		}
 		var end int
@@ -78,11 +78,11 @@ walk:
 					break
 				}
 			}
-			p := Param{
-				Key:   node.path,
-				Value: path[:end],
+			if _, ok := params[node.path]; !ok {
+				params[node.path] = path
+			} else {
+				panic(errors.New("param name can not be same"))
 			}
-			params = append(params, p)
 		}
 		path = path[end:]
 		if strings.Contains(node.indices, ":") && strings.Contains(node.indices, string(path[0])) {

@@ -5,16 +5,13 @@ import (
 	"net/http"
 )
 
-type Param struct {
-	Key   string
-	Value string
-}
-
 const (
 	abortIndex int8 = math.MaxInt8 / 2
 )
 
-type Params []Param
+type Params map[string]string
+
+type Res map[string]interface{}
 
 type Context struct {
 	Writer  http.ResponseWriter
@@ -59,7 +56,7 @@ func (c *Context) JSON(code int, data interface{}) {
 }
 
 func (c *Context) reset() {
-	c.Params = c.Params[0:0]
+	c.Params = make(map[string]string)
 	c.index = -1
 	c.handlers = c.handlers[0:0]
 	c.key = nil
