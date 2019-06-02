@@ -1,4 +1,4 @@
-package zin
+package zhanst
 
 import "path"
 

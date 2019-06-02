@@ -1,7 +1,6 @@
-package zin
+package zhanst
 
 import (
-	"gin/render"
 	"math"
 	"net/http"
 )
@@ -42,16 +41,16 @@ func (c *Context) Next() {
 	}
 }
 
-func (c *Context) Render(code int, r render.Render) {
-	c.Writer.WriteHeader(code)
-	if err := r.Render(c.Writer); err != nil {
-		panic(err)
-	}
-}
-
-func (c *Context) JSON(code int, data interface{}) {
-	c.Render(code, render.JSON{Data: data})
-}
+//func (c *Context) Render(code int, r render.Render) {
+//	c.Writer.WriteHeader(code)
+//	if err := r.Render(c.Writer); err != nil {
+//		panic(err)
+//	}
+//}
+//
+//func (c *Context) JSON(code int, data interface{}) {
+//	c.Render(code, render.JSON{Data: data})
+//}
 
 func (c *Context) reset() {
 	c.Params = c.Params[0:0]

@@ -1,4 +1,4 @@
-package zin
+package zhanst
 
 import (
 	"net/http"
@@ -32,9 +32,19 @@ func (engine *Engine) Run(addr string) {
 	http.ListenAndServe(addr, engine)
 }
 
+func (engine *Engine) Handle(method string, path string) {
+	tree := engine.trees[method]
+	handles, _ := tree.getValue(path)
+	for _, handle := range handles {
+		c := Context{}
+		handle(&c)
+	}
+}
+
 func (engine *Engine) addRoute(method string, path string, handlers HandlerChain) {
 	if _, ok := engine.trees[method]; !ok {
-		root := new(node)
+		root := new(treeNode)
+		root.path = "/"
 		engine.trees[method] = methodTree{
 			method: method,
 			root:   root,

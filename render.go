@@ -1,4 +1,4 @@
-package zin
+package zhanst
 
 import (
 	"encoding/json"
@@ -17,7 +17,6 @@ func writeContentType(w http.ResponseWriter, value []string) {
 		header["Content-Type"] = value
 	}
 }
-
 
 func (r JSON) Render(w http.ResponseWriter) (err error) {
 	if err = WriteJSON(w, r.Data); err != nil {
