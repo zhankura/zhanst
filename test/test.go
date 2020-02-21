@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"zhanst"
+	"github.com/Victordong/zhanst"
 )
 
 type Message struct {
@@ -11,33 +11,33 @@ type Message struct {
 }
 
 func GetMessage(c *zhanst.Context) {
-	if id, ok := c.Params["id"]; !ok {
-		c.JSON(500, zhanst.Res{
-			"code": 500,
-			"msg":  "id not exist",
-		})
-		return
-	} else {
-		c.JSON(200, zhanst.Res{
-			"code": 200,
-			"id":   id,
-		})
-		return
-	}
+	c.JSON(200, zhanst.Res{
+		"code": 200,
+		"msg":  "get message",
+	})
+	return
+}
+
+func GetMessageInt(c *zhanst.Context) {
+	c.JSON(200, zhanst.Res{
+		"code": 200,
+		"msg":  "get message int",
+	})
+	return
 }
 
 func PostMessage(c *zhanst.Context) {
 	msg := &Message{}
 	if err := c.Bind(msg); err != nil {
 		c.JSON(500, zhanst.Res{
-			"code":500,
-			"msg": err.Error(),
+			"code": 500,
+			"msg":  err.Error(),
 		})
 		return
 	} else {
 		c.JSON(200, zhanst.Res{
-			"code":200,
-			"msg":msg,
+			"code": 200,
+			"msg":  msg,
 		})
 		return
 	}
@@ -97,7 +97,7 @@ func BeforeRequest(c *zhanst.Context) {
 
 func AfterRequest(c *zhanst.Context) {
 	c.Next()
-	fmt.Println("before request")
+	fmt.Println("after request")
 }
 
 func main() {
@@ -105,8 +105,8 @@ func main() {
 	group := engine.Group("/api")
 	group.Use(BeforeRequest)
 	group.Use(AfterRequest)
-	group.GET("/messages/:id", GetMessage)
-	group.POST("/messages", PostMessage)
+	group.GET("/messages/int", GetMessageInt)
+	group.GET("/messages", GetMessage)
 
 	engine.Run("0.0.0.0:8084")
 

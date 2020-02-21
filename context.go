@@ -73,6 +73,10 @@ func (c *Context) SetValue(key string, value interface{}) {
 	c.key[key] = value
 }
 
+func (c *Context) DelValue(key string) {
+	delete(c.key, key)
+}
+
 func (c *Context) GetValue(key string) interface{} {
 	if _, ok := c.key[key]; !ok {
 		return nil

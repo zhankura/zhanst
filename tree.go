@@ -46,7 +46,8 @@ walk:
 	for {
 		if path == node.path && node.nodeType == part {
 			return node.handlers, params
-		} else if id := strings.Index(path, "/"); id == -1 && node.nodeType == param {
+		}
+		if id := strings.Index(path, "/"); id == -1 && node.nodeType == param {
 			if _, ok := params[node.path]; !ok {
 				params[node.path] = path
 			} else {
@@ -63,14 +64,7 @@ walk:
 				}
 			}
 			if end != len(node.path) {
-				if len(nodes) == 0 {
-					panic(errors.New("not found"))
-				} else {
-					mid := nodes[len(nodes)]
-					node = mid.node
-					path = mid.path
-					continue walk
-				}
+				panic(errors.New("not found"))
 			}
 		} else {
 			for end = 0; end < len(path); end++ {
@@ -80,8 +74,6 @@ walk:
 			}
 			if _, ok := params[node.path]; !ok {
 				params[node.path] = path
-			} else {
-				panic(errors.New("param name can not be same"))
 			}
 		}
 		path = path[end:]
@@ -93,7 +85,8 @@ walk:
 		}
 		if id := strings.Index(node.indices, ":"); id != -1 {
 			node = node.children[id]
-		} else if id := strings.Index(node.indices, string(path[0])); id != -1 {
+		}
+		if id := strings.Index(node.indices, string(path[0])); id != -1 {
 			node = node.children[id]
 		} else {
 			if len(nodes) == 0 {
@@ -205,14 +198,14 @@ func (tree *methodTree) addRoute(path string, handlers HandlerChain) {
 	node := tree.root
 walk:
 	for {
-		maxLength := min(len(path), len(node.path))
+		maxMateLength := min(len(path), len(node.path))
 		var end int
-		for end = 0; end < maxLength; end++ {
+		for end = 0; end < maxMateLength; end++ {
 			if path[end] != node.path[end] {
 				break
 			}
 		}
-		if end != maxLength {
+		if end != maxMateLength {
 			newNode := insertChildNode(node.path[end:], node.handlers, node.children, node.indices, false)
 			node.path = node.path[:end]
 			node.handlers = nil
@@ -235,14 +228,21 @@ walk:
 					}
 					continue walk
 				}
+				insertNode := insertChildNode(remainPath, handlers, make([]*treeNode, 0), "", true)
+				node.children = append(node.children, insertNode)
+				node.indices = node.indices + string(remainPath[0])
 			} else if len(path) < len(node.path) {
 				remainPath = node.path[end:]
+				insertNode := insertChildNode(remainPath, node.handlers, make([]*treeNode, 0), "", true)
+				insertNode.children = node.children
+				insertNode.indices = node.indices
+				node.handlers = handlers
+				node.children = []*treeNode{insertNode}
+				node.indices = string(remainPath[0])
 			} else {
 				panic(errors.New("url has been used"))
 			}
-			insertNode := insertChildNode(remainPath, handlers, make([]*treeNode, 0), "", true)
-			node.children = append(node.children, insertNode)
-			node.indices = node.indices + string(remainPath[0])
+			node.path = node.path[:end]
 			return
 		}
 	}
